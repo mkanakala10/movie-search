@@ -5,7 +5,17 @@ from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="Semantic Movie Search API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 1. Hardware Optimization for macOS (Apple Silicon MPS)
 device = "mps" if torch.backends.mps.is_available() else "cpu"
@@ -61,10 +71,10 @@ async def semantic_search(q: str, limit: int = 2):
     )
 
     # Format and return the results
-    return {
-        "query": q,
-        "results": [hit.payload for hit in search_results.points]
-    }
+    return [
+        {"title": hit.payload["name"], "overview": hit.payload["plot"]}
+        for hit in search_results.points
+    ]
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
